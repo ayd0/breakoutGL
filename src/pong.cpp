@@ -12,7 +12,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Game PongGL(SCR_WIDTH, SCR_HEIGHT);
+Game Platphong(SCR_WIDTH, SCR_HEIGHT);
 
 int main(int argc, char *argv[]) {
     glfwInit();
@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 #endif
     glfwWindowHint(GLFW_RESIZABLE, false);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "PongGL", nullptr, nullptr); 
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Platphong", nullptr, nullptr); 
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    PongGL.Init();
+    Platphong.Init();
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
@@ -50,13 +50,13 @@ int main(int argc, char *argv[]) {
         lastFrame = currentFrame;
         glfwPollEvents();
 
-        PongGL.ProcessInput(deltaTime);
+        Platphong.ProcessInput(deltaTime);
 
-        PongGL.Update(deltaTime);
+        Platphong.Update(deltaTime);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        PongGL.Render();
+        Platphong.Render();
 
         glfwSwapBuffers(window);
     }
@@ -74,9 +74,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
-            PongGL.Keys[key] = true;
+            Platphong.Keys[key] = true;
         else if (action == GLFW_RELEASE)
-            PongGL.Keys[key] = false;
+            Platphong.Keys[key] = false;
     }
 }
 
