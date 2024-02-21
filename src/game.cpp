@@ -11,6 +11,7 @@
 #include <iostream>
 
 SpriteRenderer    *Renderer;
+SpriteRenderer    *bgRenderer;
 GameObject        *Player;
 BallObject        *Ball;
 ParticleGenerator *Particles;
@@ -26,10 +27,12 @@ Game::~Game() {
     delete Ball;
     delete Player;
     // delete Renderer; // TODO: fix segfault
+    // delete bgRenderer;
 }
 
 void Game::Init() {
     ResourceManager::LoadShader("../shaders/sprite.vs", "../shaders/sprite.fs", nullptr, "sprite");
+    ResourceManager::LoadShader("../shaders/background.vs", "../shaders/background.fs", nullptr, "background");
     ResourceManager::LoadShader("../shaders/particle_trail_A.vs", "../shaders/particle_trail_A.fs", nullptr, "pTrailA");
     ResourceManager::LoadShader("../shaders/post_processing.vs", "../shaders/post_processing.fs", nullptr, "postprocessing");
 
@@ -38,6 +41,9 @@ void Game::Init() {
 
     ResourceManager::GetShader("sprite").Use().SetInteger("image", 0);
     ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
+    ResourceManager::GetShader("background").Use().SetInteger("image", 0);
+    ResourceManager::GetShader("background").SetMatrix4("projection", projection);
+    ResourceManager::GetShader("background").SetFloat("aspect", (float)this->Width / this->Height);
     ResourceManager::GetShader("pTrailA").Use().SetInteger("sprite", 0);
     ResourceManager::GetShader("pTrailA").SetMatrix4("projection", projection);
     ResourceManager::LoadTexture("../resources/textures/background.jpg", false, "background");
@@ -54,6 +60,7 @@ void Game::Init() {
     ResourceManager::LoadTexture("../resources/textures/chaos.png", true, "powerup_chaos");
 
     Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
+    bgRenderer = new SpriteRenderer(ResourceManager::GetShader("background"));
     Particles = new ParticleGenerator(ResourceManager::GetShader("pTrailA"), ResourceManager::GetTexture("particle"), 500);
     Effects = new PostProcessor(ResourceManager::GetShader("postprocessing"), this->Width, this->Height);
 
@@ -91,6 +98,9 @@ void Game::Update(float dt) {
         if (shakeTime <= 0.0f)
             Effects->Shake = false;
     }
+    glm::vec2 ballPos = glm::vec2(Ball->Position.x / this->Width, Ball->Position.y / this->Height);
+    ResourceManager::GetShader("background").Use();
+    ResourceManager::GetShader("background").SetVector2f("ballPos", ballPos);
 }
 
 void Game::ProcessInput(float dt) {
@@ -128,7 +138,7 @@ void Game::ProcessInput(float dt) {
 void Game::Render() {
     if(this->State == GAME_ACTIVE) {
         Effects->BeginRender();
-        Renderer->DrawSprite(ResourceManager::GetTexture("background"), glm::vec2(0.0f, 0.0f), glm::vec2(this->Width, this->Height), 0.0f);
+        bgRenderer->DrawSprite(ResourceManager::GetTexture("background"), glm::vec2(0.0f, 0.0f), glm::vec2(this->Width, this->Height), 0.0f);
         this->Levels[this->Level].Draw(*Renderer);
         Player->Draw(*Renderer);
         Particles->Draw();
@@ -329,24 +339,23 @@ bool IsOtherPowerUpActive(std::vector<PowerUp> &powerUps, std::string type) {
 
 bool ShouldSpawn(unsigned int chance) {
     unsigned int random = rand() % chance;
-    std::cout << random << std::endl;
     return random == 0;
 }
 
 void Game::SpawnPowerUps(GameObject &block) {
-    if (ShouldSpawn(5)) // 1 in 75 chance
+    if (ShouldSpawn(25)) // 1 in 75 chance
         this->PowerUps.push_back(
              PowerUp("speed", glm::vec3(1.0f), 0.0f, block.Position, ResourceManager::GetTexture("powerup_speed")
          ));
-    if (ShouldSpawn(5))
+    if (ShouldSpawn(25))
         this->PowerUps.push_back(
             PowerUp("sticky", glm::vec3(1.0f), 20.0f, block.Position, ResourceManager::GetTexture("powerup_sticky")
         ));
-    if (ShouldSpawn(5))
+    if (ShouldSpawn(25))
         this->PowerUps.push_back(
             PowerUp("pass-through", glm::vec3(1.0f), 10.0f, block.Position, ResourceManager::GetTexture("powerup_passthrough")
         ));
-    if (ShouldSpawn(5))
+    if (ShouldSpawn(25))
         this->PowerUps.push_back(
             PowerUp("grow", glm::vec3(1.0f), 0.0f, block.Position, ResourceManager::GetTexture("powerup_grow")
         ));
