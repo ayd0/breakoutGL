@@ -3,13 +3,15 @@
 #include "../include/sprite_renderer.h"
 #include "../include/game_object.h"
 #include "../include/ball_object.h"
+#include "../include/particle_generator.h"
 
 #include <iostream>
 
 // Game-related State data
-SpriteRenderer  *Renderer;
-GameObject      *Player;
-BallObject      *Ball;
+SpriteRenderer    *Renderer;
+GameObject        *Player;
+BallObject        *Ball;
+ParticleGenerator *Particles;
 
 Game::Game(unsigned int width, unsigned int height) 
     : State(GAME_ACTIVE), Keys(), Width(width), Height(height)
@@ -18,23 +20,31 @@ Game::Game(unsigned int width, unsigned int height)
 }
 
 Game::~Game() {
-
+    delete Ball;
+    delete Player;
+    // delete Renderer; // TODO: fix segfault
 }
 
 void Game::Init() {
     ResourceManager::LoadShader("../shaders/sprite.vs", "../shaders/sprite.fs", nullptr, "sprite");
+    ResourceManager::LoadShader("../shaders/particle_trail_A.vs", "../shaders/particle_trail_A.fs", nullptr, "pTrailA");
 
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width), 
         static_cast<float>(this->Height), 0.0f, -1.0f, 1.0f);
 
     ResourceManager::GetShader("sprite").Use().SetInteger("image", 0);
     ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
-    Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
+    ResourceManager::GetShader("pTrailA").Use().SetInteger("sprite", 0);
+    ResourceManager::GetShader("pTrailA").SetMatrix4("projection", projection);
     ResourceManager::LoadTexture("../resources/textures/background.jpg", false, "background");
     ResourceManager::LoadTexture("../resources/textures/pong.png", true, "pong");
     ResourceManager::LoadTexture("../resources/textures/block.png", false, "block");
     ResourceManager::LoadTexture("../resources/textures/block_solid.png", false, "block_solid");
     ResourceManager::LoadTexture("../resources/textures/paddle.png", true, "paddle");
+    ResourceManager::LoadTexture("../resources/textures/weed.png", true, "particle");
+
+    Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
+    Particles = new ParticleGenerator(ResourceManager::GetShader("pTrailA"), ResourceManager::GetTexture("particle"), 500);
 
     GameLevel one; one.Load("../resources/levels/one.lvl", this->Width, this->Height / 2);
     GameLevel two; two.Load("../resources/levels/two.lvl", this->Width, this->Height / 2);
@@ -61,6 +71,7 @@ void Game::Update(float dt) {
         this->ResetLevel();
         this->ResetPlayer();
     }
+    Particles->Update(dt, *Ball, 2, glm::vec2(Ball->Radius / 2.0f));
 }
 
 void Game::ProcessInput(float dt) {
@@ -100,6 +111,7 @@ void Game::Render() {
         Renderer->DrawSprite(ResourceManager::GetTexture("background"), glm::vec2(0.0f, 0.0f), glm::vec2(this->Width, this->Height), 0.0f);
         this->Levels[this->Level].Draw(*Renderer);
         Player->Draw(*Renderer);
+        Particles->Draw();
         Ball->Draw(*Renderer);
     }
 }
